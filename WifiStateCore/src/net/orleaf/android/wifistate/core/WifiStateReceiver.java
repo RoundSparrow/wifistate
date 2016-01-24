@@ -192,8 +192,8 @@ public class WifiStateReceiver extends BroadcastReceiver {
                     ctx.getResources().getString(R.string.app_name), System.currentTimeMillis());
             Intent intent = new Intent(android.provider.Settings.ACTION_WIFI_SETTINGS);
             PendingIntent contentIntent = PendingIntent.getActivity(ctx, 0, intent, Intent.FLAG_ACTIVITY_NEW_TASK);
-            notification.setLatestEventInfo(ctx, ctx.getResources().getString(R.string.app_name),
-                    "State" + i, contentIntent);
+            //notification.setLatestEventInfo(ctx, ctx.getResources().getString(R.string.app_name),
+            //        "State" + i, contentIntent);
             //notification.flags |= Notification.FLAG_ONGOING_EVENT;
             notificationManager.notify(i, notification);
         }
@@ -209,13 +209,25 @@ public class WifiStateReceiver extends BroadcastReceiver {
     public static void showNotificationIcon(Context ctx, int iconRes, String message) {
         NotificationManager notificationManager = (NotificationManager)
                 ctx.getSystemService(Context.NOTIFICATION_SERVICE);
-        Notification notification = new Notification(iconRes,
-                ctx.getResources().getString(R.string.app_name), System.currentTimeMillis());
+
         Intent intent = new Intent(ctx, WifiStateLaunchReceiver.class);
         PendingIntent contentIntent = PendingIntent.getBroadcast(ctx, 0, intent, 0);
-        notification.setLatestEventInfo(ctx, ctx.getResources().getString(R.string.app_name),
-                message, contentIntent);
+
+        Notification notification = new Notification.Builder(ctx)
+                .setContentTitle(ctx.getResources().getString(R.string.app_name))
+                .setContentText(message)
+                .setSmallIcon(iconRes)
+                // .setLargeIcon(aBitmap)
+                .setContentIntent(contentIntent)
+                .build(); // available from API level 11 and onwards
+
+        //Notification notification = new Notification(iconRes,
+        //        ctx.getResources().getString(R.string.app_name), System.currentTimeMillis());
+
+        // notification.setLatestEventInfo(ctx, ctx.getResources().getString(R.string.app_name),
+        //        message, contentIntent);
         notification.flags = 0;
+
         if (!WifiStatePreferences.getClearable(ctx)) {
             notification.flags |= (Notification.FLAG_ONGOING_EVENT | Notification.FLAG_NO_CLEAR);
         }
