@@ -34,7 +34,7 @@
         <activity
             android:name="net.orleaf.android.wifistate.core.WifiStateStatusActivity"
             android:launchMode="singleInstance"
-            android:theme="@android:style/Theme.Dialog" >
+            >
         </activity>
         <activity android:name="net.orleaf.android.wifistate.core.preferences.WifiStatePreferencesActivity" />
         <activity

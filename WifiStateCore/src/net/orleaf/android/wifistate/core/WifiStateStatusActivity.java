@@ -42,6 +42,8 @@ public class WifiStateStatusActivity extends Activity {
     private List<WifiConfiguration> mNetworkList = null;
     private Handler mHandler = new Handler();
 
+    private static final boolean useLeftIcon = false;
+
     // Views
     private ToggleButton mWifiToggle;
     private Button mWifiSettings;
@@ -54,11 +56,13 @@ public class WifiStateStatusActivity extends Activity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        requestWindowFeature(Window.FEATURE_LEFT_ICON);
+        if (useLeftIcon)
+            requestWindowFeature(Window.FEATURE_LEFT_ICON);
 
         setContentView(R.layout.main);
-        getWindow().setFeatureDrawableResource(Window.FEATURE_LEFT_ICON,
-                R.drawable.icon);
+
+        if (useLeftIcon)
+            getWindow().setFeatureDrawableResource(Window.FEATURE_LEFT_ICON, R.drawable.icon);
 
         mNetworkLayout = (LinearLayout) findViewById(R.id.network);
         registerForContextMenu(mNetworkLayout);
@@ -166,10 +170,12 @@ public class WifiStateStatusActivity extends Activity {
     @Override
     public boolean onPrepareOptionsMenu(Menu menu) {
         mRouterMenu = menu.findItem(R.id.menu_router);
-        if (mNetworkStateInfo.getGatewayIpAddress() != null) {
-            mRouterMenu.setVisible(true);
-        } else {
-            mRouterMenu.setVisible(false);
+        if (mNetworkStateInfo != null) {
+            if (mNetworkStateInfo.getGatewayIpAddress() != null) {
+                mRouterMenu.setVisible(true);
+            } else {
+                mRouterMenu.setVisible(false);
+            }
         }
         return super.onPrepareOptionsMenu(menu);
     }
