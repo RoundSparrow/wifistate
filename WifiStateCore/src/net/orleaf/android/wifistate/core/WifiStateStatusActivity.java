@@ -1,7 +1,9 @@
 package net.orleaf.android.wifistate.core;
 
+import java.lang.reflect.Field;
 import java.util.List;
 
+import android.app.ActionBar;
 import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -22,6 +24,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.View.OnLongClickListener;
+import android.view.ViewConfiguration;
 import android.view.Window;
 import android.widget.Button;
 import android.widget.LinearLayout;
@@ -54,11 +57,11 @@ public class WifiStateStatusActivity extends Activity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        requestWindowFeature(Window.FEATURE_LEFT_ICON);
+        //requestWindowFeature(Window.FEATURE_LEFT_ICON);
 
         setContentView(R.layout.main);
-        getWindow().setFeatureDrawableResource(Window.FEATURE_LEFT_ICON,
-                R.drawable.icon);
+        //getWindow().setFeatureDrawableResource(Window.FEATURE_LEFT_ICON,
+        //        R.drawable.icon);
 
         mNetworkLayout = (LinearLayout) findViewById(R.id.network);
         registerForContextMenu(mNetworkLayout);
@@ -107,6 +110,29 @@ public class WifiStateStatusActivity extends Activity {
             }
         });
         mWifiReenable.setEnabled(false);
+
+        try {
+            ViewConfiguration config = ViewConfiguration.get(this);
+            Field menuKeyField = ViewConfiguration.class.getDeclaredField("sHasPermanentMenuKey");
+            if (menuKeyField != null) {
+                menuKeyField.setAccessible(true);
+                menuKeyField.setBoolean(config, false);
+                if (getActionBar() != null) {
+                    getActionBar().setTitle("FORCED AAA");
+                    getActionBar().setDisplayOptions(ActionBar.DISPLAY_SHOW_TITLE | ActionBar.DISPLAY_SHOW_CUSTOM, ActionBar.DISPLAY_SHOW_CUSTOM);
+                }
+                android.util.Log.w("WifiState", "FORCING menu field on for this device");
+            }
+            else
+            {
+                android.util.Log.i("WifiState", "Device indicates perm menu button");
+            }
+        }
+        catch (Exception e0)
+        {
+            android.util.Log.e("WifiState", "Exception forcing menu");
+            e0.printStackTrace();
+        }
     }
 
     @Override
@@ -166,10 +192,13 @@ public class WifiStateStatusActivity extends Activity {
     @Override
     public boolean onPrepareOptionsMenu(Menu menu) {
         mRouterMenu = menu.findItem(R.id.menu_router);
-        if (mNetworkStateInfo.getGatewayIpAddress() != null) {
-            mRouterMenu.setVisible(true);
-        } else {
-            mRouterMenu.setVisible(false);
+
+        if (mNetworkStateInfo != null) {
+            if (mNetworkStateInfo.getGatewayIpAddress() != null) {
+                mRouterMenu.setVisible(true);
+            } else {
+                mRouterMenu.setVisible(false);
+            }
         }
         return super.onPrepareOptionsMenu(menu);
     }
@@ -320,4 +349,8 @@ public class WifiStateStatusActivity extends Activity {
         }
     }
 
+
+    public void messageMenuOnClick(View view) {
+        //
+    }
 }
