@@ -13,6 +13,11 @@ import android.util.Log;
 
 import net.orleaf.android.wifistate.core.preferences.WifiStatePreferences;
 
+import java.net.InetAddress;
+import java.net.NetworkInterface;
+import java.net.SocketException;
+import java.util.Enumeration;
+
 
 public class NetworkStateInfo {
     enum States {
@@ -180,6 +185,7 @@ public class NetworkStateInfo {
             // APN
             mNetworkName = mDataNetworkInfo.getExtraInfo();
         }
+        // ToDo: what if States.STATE_MOBILE_CONNECTED ?
 
         return true;
     }
@@ -279,11 +285,45 @@ public class NetworkStateInfo {
      * メッセージ
      */
     public String getStateMessage() {
+        // Version 1.4 showed:
         String message = mStateDetail;
         if (mNetworkName != null) {
             message += " (" + mNetworkName + ")";
         }
+
+        // NOTE: Github GPL source only had version 1.4
+        // The Google Play Store has version 1.5 with this comment "- Show SSID and IP address on status bar."
+        // Version 1.5 change
+        switch (getState())
+        {
+            case STATE_WIFI_CONNECTED:
+                message = "IP:" + getLocalIpAddress();
+                break;
+            case STATE_MOBILE_CONNECTED:
+                message = "IP:" + getLocalIpAddress();
+                break;
+        }
+
         return message;
+    }
+
+    public String getNetworkMessage() {
+        if (isWifiConnected())
+        {
+            return "Wi-Fi: " + getNetworkName();
+        }
+        else
+        {
+            switch (getState()) {
+                case STATE_DISABLED:
+                // Behavior of 1.5 is to show the App title when not connected
+                    return mCtx.getResources().getString(R.string.app_name);
+                case STATE_MOBILE_CONNECTED:
+                    return "Mobile Data: " + mNetworkName;
+                default:
+                    return "??? " + mState;
+            }
+        }
     }
 
     /**
@@ -305,6 +345,26 @@ public class NetworkStateInfo {
                 return int2IpAddress(dhcpInfo.ipAddress);
             }
         }
+        else
+        {
+            if (mState.equals(States.STATE_MOBILE_CONNECTED)) {
+                try {
+                    // ToDo: How does this behave on Ethernet + Mobile + WiFi devices?
+                    for (Enumeration<NetworkInterface> en = NetworkInterface.getNetworkInterfaces(); en.hasMoreElements();) {
+                        NetworkInterface intf = en.nextElement();
+                        for (Enumeration<InetAddress> enumIpAddr = intf.getInetAddresses(); enumIpAddr.hasMoreElements();) {
+                            InetAddress inetAddress = enumIpAddr.nextElement();
+                            if (!inetAddress.isLoopbackAddress()) {
+                                return inetAddress.getHostAddress().toString();
+                            }
+                        }
+                    }
+                } catch (SocketException ex) {
+                    return null;
+                }
+            }
+        }
+
         return null;
     }
 
