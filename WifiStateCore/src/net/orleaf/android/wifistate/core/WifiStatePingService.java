@@ -194,9 +194,10 @@ public class WifiStatePingService extends Service {
                         pingStatus.mNumNg++;
                     }
                     // only update Android Notification if it's a change in reachability
-                    if (reachable != pingStatus.mReachable) {
+                    // ToDo: Make this an Advanced setting for user
+                    //if (reachable != pingStatus.mReachable) {
                         notifyReachability(reachable);
-                    }
+                    //}
                     pingStatus.mReachable = reachable;
                     if (reachable) {
                         break;

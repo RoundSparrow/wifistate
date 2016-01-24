@@ -81,20 +81,32 @@ public class WifiStateReceiver extends BroadcastReceiver {
                  */
                 if (mNetworkStateInfo.isConnected()) {  // 接続中のみ
                     boolean reachable = intent.getBooleanExtra(EXTRA_REACHABLE, true);
-                    if (reachable != mReachable) {
+                    // Only if there is a change in reachable state
+                    //if (reachable != mReachable) {
                         mReachable = reachable;
                         String message = mNetworkStateInfo.getStateMessage();
                         if (WifiState.DEBUG) {
                             int ok = intent.getIntExtra("ok", 0);
                             int total = intent.getIntExtra("total", 0);
                             message += " ping:" + ok + "/" + total;
+                            if (reachable)
+                            {
+                                if (ok % 2 == 0)
+                                    message += " ♡";
+                                else
+                                    message += " ♥";
+                            }
+                            else
+                            {
+                                message += " !!";
+                            }
                         }
                         if (mReachable) {
                             showNotificationIcon(ctx, mNetworkStateInfo.getIcon(), message, mNetworkStateInfo.getNetworkMessage());
                         } else {
                             showNotificationIcon(ctx, R.drawable.state_warn, message, mNetworkStateInfo.getNetworkMessage());
                         }
-                    }
+                    //}
                 }
                 return;
             } else if (intent.getAction().equals(ACTION_PING_FAIL)) {
