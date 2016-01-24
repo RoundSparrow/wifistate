@@ -9,7 +9,10 @@ import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.net.NetworkInfo;
 import android.net.Uri;
+import android.net.wifi.WifiInfo;
+import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.os.SystemClock;
 import android.telephony.PhoneStateListener;
@@ -129,6 +132,30 @@ public class WifiStateReceiver extends BroadcastReceiver {
                 if (mNetworkStateInfo.isClearableState()) {
                     clearNotification(ctx);
                     return;
+                }
+            } else if (intent.getAction().equals("android.net.conn.CONNECTIVITY_CHANGE"))
+            {
+                String outPile0 = "";
+                Bundle extras = intent.getExtras();
+                if (extras != null) {
+                    for (String key: extras.keySet()) {
+                        outPile0 += " [" + key + "]: " + extras.get(key);
+                    }
+                }
+                else {
+                    outPile0 = "no Extras";
+                }
+
+                android.util.Log.i("WiFiState", "intent CONNECTIVITY_CHANGE " + outPile0);
+            } else if (intent.getAction().equals("android.net.wifi.STATE_CHANGE"))
+            {
+                NetworkInfo info = intent.getParcelableExtra(WifiManager.EXTRA_NETWORK_INFO);
+                if(info != null) {
+                    if(info.isConnected()) {
+                        // Do your work.
+                        android.util.Log.i("WiFiState", "intent android.net.wifi.STATE_CHANGE " + info.getDetailedState() + " " + info.getState());
+                        ;
+                    }
                 }
             }
         }

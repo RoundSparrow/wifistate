@@ -66,5 +66,6 @@
     <string name="reenable_wifi">Reconnect Wi-Fi</string>
     <string name="open_wifi_settings">Wi-Fi settings</string>
     <string name="browse_router">Router settings</string>
+    <string name="state_connected_no_internet">Connected, No Internet</string>
 
 </resources>

@@ -30,6 +30,7 @@ public class NetworkStateInfo {
         STATE_WIFI_COMPLETED,
         STATE_WIFI_OBTAINING_IPADDR,
         STATE_WIFI_CONNECTED,
+        STATE_WIFI_CONNECTED_NO_INTERNET,
         STATE_MOBILE_CONNECTING,
         STATE_MOBILE_CONNECTED
     };
@@ -114,8 +115,15 @@ public class NetworkStateInfo {
             } else if (mWifiNetworkInfo != null && mWifiNetworkInfo.isAvailable() &&
                     mWifiNetworkInfo.getState() == NetworkInfo.State.CONNECTED &&
                     mWifiNetworkInfo.getDetailedState() == NetworkInfo.DetailedState.CONNECTED) {
-                newState = States.STATE_WIFI_CONNECTED;
-                newStateDetail = res.getString(R.string.state_connected);
+                if (mDataNetworkInfo.isAvailable()) {
+                    newState = States.STATE_WIFI_CONNECTED;
+                    newStateDetail = res.getString(R.string.state_connected);
+                }
+                else
+                {
+                    newState = States.STATE_WIFI_CONNECTED_NO_INTERNET;
+                    newStateDetail = res.getString(R.string.state_connected_no_internet);
+                }
             } else if (mSupplicantConnected && mSupplicantState != null) {
                 if (mSupplicantState == SupplicantState.SCANNING) {
                     newState = States.STATE_WIFI_SCANNING;
@@ -358,6 +366,20 @@ public class NetworkStateInfo {
         return mStateDetail;
     }
 
+
+    private boolean checkWifiOnAndConnected() {
+        WifiManager wifiMgr = (WifiManager) mCtx.getSystemService(Context.WIFI_SERVICE);
+        if (wifiMgr.isWifiEnabled()) { // WiFi adapter is ON
+            WifiInfo wifiInfo = wifiMgr.getConnectionInfo();
+            if( wifiInfo.getNetworkId() == -1 ){
+                return false; // Not connected to an access-Point
+            }
+            return true;      // Connected to an Access Point
+        } else {
+            return false; // WiFi adapter is OFF
+        }
+    }
+
     /**
      * IPアドレスを取得
      */
@@ -365,6 +387,7 @@ public class NetworkStateInfo {
         WifiManager wm = (WifiManager) mCtx.getSystemService(Context.WIFI_SERVICE);
 
         if (mState.equals(States.STATE_WIFI_CONNECTED)) {
+            // ToDo: test on Static IP address device to be sure this isn't literally only DHCP
             DhcpInfo dhcpInfo = wm.getDhcpInfo();
             if (dhcpInfo.ipAddress != 0) {
                 return int2IpAddress(dhcpInfo.ipAddress);
