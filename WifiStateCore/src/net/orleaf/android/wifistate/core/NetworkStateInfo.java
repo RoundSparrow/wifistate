@@ -46,7 +46,7 @@ public class NetworkStateInfo {
     private NetworkInfo mWifiNetworkInfo = null;
 
     // Mobile network state
-    private int mDataConnectionState;
+    private int mDataConnectionState = TelephonyManager.DATA_DISCONNECTED;
     private NetworkInfo mDataNetworkInfo = null;
 
     /**
@@ -264,7 +264,20 @@ public class NetworkStateInfo {
      * ネットワークに接続中かどうか
      */
     public boolean isConnected() {
-        return (mState.equals(States.STATE_MOBILE_CONNECTED) || mState.equals(States.STATE_WIFI_CONNECTED));
+        if (mState.equals(States.STATE_WIFI_SCANNING))
+        {
+           // WiFi can be scanning at the same time as Mobile connected
+            return isMobileConnected();
+        }
+        else {
+            return (mState.equals(States.STATE_MOBILE_CONNECTED) || mState.equals(States.STATE_WIFI_CONNECTED));
+        }
+    }
+
+
+    public boolean isMobileConnected()
+    {
+        return (mDataConnectionState == TelephonyManager.DATA_CONNECTED);
     }
 
     /**
@@ -300,7 +313,13 @@ public class NetworkStateInfo {
                 message = "IP:" + getLocalIpAddress();
                 break;
             case STATE_MOBILE_CONNECTED:
-                message = "IP:" + getLocalIpAddress();
+                message = "IP:" + getMobileLocalIpAddress();
+                break;
+            case STATE_WIFI_SCANNING:
+                if (isMobileConnected())
+                    message = "WiFi Scanning, Data IP:" + getMobileLocalIpAddress();
+                else
+                    message = "WiFi Scanning, Data disconnected";
                 break;
         }
 
@@ -320,6 +339,12 @@ public class NetworkStateInfo {
                     return mCtx.getResources().getString(R.string.app_name);
                 case STATE_MOBILE_CONNECTED:
                     return "Mobile Data: " + mNetworkName;
+                case STATE_WIFI_SCANNING:
+                    // WiFi can be scanning at same time as mobile connected
+                    if (isMobileConnected())
+                        return "Wi-Fi scanning, Mobile connected";
+                    else
+                        return "Wi-Fi scanning";
                 default:
                     return "??? " + mState;
             }
@@ -348,24 +373,31 @@ public class NetworkStateInfo {
         else
         {
             if (mState.equals(States.STATE_MOBILE_CONNECTED)) {
-                try {
-                    // ToDo: How does this behave on Ethernet + Mobile + WiFi devices?
-                    for (Enumeration<NetworkInterface> en = NetworkInterface.getNetworkInterfaces(); en.hasMoreElements();) {
-                        NetworkInterface intf = en.nextElement();
-                        for (Enumeration<InetAddress> enumIpAddr = intf.getInetAddresses(); enumIpAddr.hasMoreElements();) {
-                            InetAddress inetAddress = enumIpAddr.nextElement();
-                            if (!inetAddress.isLoopbackAddress()) {
-                                return inetAddress.getHostAddress().toString();
-                            }
-                        }
-                    }
-                } catch (SocketException ex) {
-                    return null;
-                }
+                return getMobileLocalIpAddress();
             }
         }
 
         return null;
+    }
+
+
+    public String getMobileLocalIpAddress()
+    {
+        try {
+            // ToDo: How does this behave on Ethernet + Mobile + WiFi devices?
+            for (Enumeration<NetworkInterface> en = NetworkInterface.getNetworkInterfaces(); en.hasMoreElements();) {
+                NetworkInterface intf = en.nextElement();
+                for (Enumeration<InetAddress> enumIpAddr = intf.getInetAddresses(); enumIpAddr.hasMoreElements();) {
+                    InetAddress inetAddress = enumIpAddr.nextElement();
+                    if (!inetAddress.isLoopbackAddress()) {
+                        return inetAddress.getHostAddress().toString();
+                    }
+                }
+            }
+            return null;
+        } catch (SocketException ex) {
+            return null;
+        }
     }
 
     /**
