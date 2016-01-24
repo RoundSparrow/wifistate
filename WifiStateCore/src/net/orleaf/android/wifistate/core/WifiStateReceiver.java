@@ -75,6 +75,7 @@ public class WifiStateReceiver extends BroadcastReceiver {
                     return;
                 }
             } else if (intent.getAction().equals(ACTION_REACHABILITY)) {
+                android.util.Log.v("WifiState", "PING_REPORT");
                 /*
                  * ネットワーク疎通監視結果通知 (ping毎に通知)
                  */

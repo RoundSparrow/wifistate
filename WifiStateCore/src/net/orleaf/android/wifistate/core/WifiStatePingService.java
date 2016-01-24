@@ -31,13 +31,11 @@ public class WifiStatePingService extends Service {
 
     private BroadcastReceiver mScreenReceiver;
 
-    private boolean mReachable;     // 直前の到達性
     private String mTarget;         // 疎通監視先ホスト
     private Thread mThread = null;  // 処理スレッド
-    private int mNumPing;           // ping実行回数(累計)
-    private int mNumOk;             // ping成功回数(累計)
-    private int mNumNg;             // ping失敗回数(累計)
-    private int mNumFail;           // ping連続失敗回数
+
+    public PingStatus pingStatus = new PingStatus();
+
 
     @Override
     public void onCreate() {
@@ -95,11 +93,11 @@ public class WifiStatePingService extends Service {
     private void startPing() {
         if (WifiState.DEBUG) Log.d(WifiState.TAG, "Target: " + mTarget);
         if (mTarget != null) {
-            mReachable = true;
-            mNumPing = 0;
-            mNumOk = 0;
-            mNumNg = 0;
-            mNumFail = 0;
+            pingStatus.mReachable = true;
+            pingStatus.mNumPing = 0;
+            pingStatus.mNumOk = 0;
+            pingStatus.mNumNg = 0;
+            pingStatus.mNumFail = 0;
             startThread();
         } else {
             // ターゲット未設定の場合は停止
@@ -132,9 +130,9 @@ public class WifiStatePingService extends Service {
         Intent intent = new Intent(this, WifiStateReceiver.class);
         intent.setAction(WifiStateReceiver.ACTION_REACHABILITY);
         intent.putExtra(WifiStateReceiver.EXTRA_REACHABLE, reachable);
-        intent.putExtra(WifiStateReceiver.EXTRA_COUNT_OK, mNumOk);
-        intent.putExtra(WifiStateReceiver.EXTRA_COUNT_NG, mNumNg);
-        intent.putExtra(WifiStateReceiver.EXTRA_COUNT_TOTAL, mNumPing);
+        intent.putExtra(WifiStateReceiver.EXTRA_COUNT_OK, pingStatus.mNumOk);
+        intent.putExtra(WifiStateReceiver.EXTRA_COUNT_NG, pingStatus.mNumNg);
+        intent.putExtra(WifiStateReceiver.EXTRA_COUNT_TOTAL, pingStatus.mNumPing);
         sendBroadcast(intent);
     }
 
@@ -179,37 +177,38 @@ public class WifiStatePingService extends Service {
                 int timeout = WifiStatePreferences.getPingTimeout(WifiStatePingService.this);
                 int count;
                 for (count = 0; count < ntry; count++) {
-                    mNumPing++;
+                    pingStatus.mNumPing++;
                     if (TESTMODE) {
                         try {
                             Thread.sleep(1000);
                         } catch (InterruptedException e) {
                             e.printStackTrace();
                         }
-                        reachable = !mReachable;
+                        reachable = !pingStatus.mReachable;
                     } else {
                         reachable = ping(mTarget, timeout);
                     }
                     if (reachable) {
-                        mNumOk++;
+                        pingStatus.mNumOk++;
                     } else {
-                        mNumNg++;
+                        pingStatus.mNumNg++;
                     }
-                    if (reachable != mReachable) {
+                    // only update Android Notification if it's a change in reachability
+                    if (reachable != pingStatus.mReachable) {
                         notifyReachability(reachable);
                     }
-                    mReachable = reachable;
+                    pingStatus.mReachable = reachable;
                     if (reachable) {
                         break;
                     }
                 }
                 if (count == ntry) {
                     // リトライオーバー
-                    mNumFail++;
-                    notifyFail(mNumFail);
+                    pingStatus.mNumFail++;
+                    notifyFail(pingStatus.mNumFail);
                 } else {
                     // 成功したら失敗回数をリセット
-                    mNumFail = 0;
+                    pingStatus.mNumFail = 0;
                 }
                 try {
                     Thread.sleep(WifiStatePreferences.getPingInterval(WifiStatePingService.this) * 1000);
