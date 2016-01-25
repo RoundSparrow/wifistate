@@ -112,7 +112,7 @@ public class WifiStateReceiver extends BroadcastReceiver {
                             else
                             {
                                 message += " !!";
-                                notificaitonColor = Color.parseColor("#FFC0CB");
+                                notificaitonColor = Color.RED;
                             }
                         }
                         if (mReachable) {

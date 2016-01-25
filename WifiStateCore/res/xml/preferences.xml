@@ -60,7 +60,7 @@
             android:title="@string/pref_ping_on_mobile_title" />
 
         <EditTextPreference
-            android:defaultValue="www.google.com"
+            android:defaultValue="@string/pref_ping_target_default"
             android:dependency="ping"
             android:key="ping_target"
             android:title="@string/pref_ping_target_title" />

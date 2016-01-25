@@ -170,11 +170,12 @@ public class WifiStatePingService extends Service {
         public void run() {
             if (WifiState.DEBUG) Log.d(WifiState.TAG, "Thread started. (" + getId() + ")");
             while (this == mThread) {
-                if (WifiState.DEBUG) Log.d(WifiState.TAG, "Pinging: " + mTarget);
-
                 boolean reachable = false;
                 int ntry = WifiStatePreferences.getPingRetry(WifiStatePingService.this) + 1;
                 int timeout = WifiStatePreferences.getPingTimeout(WifiStatePingService.this);
+
+                if (WifiState.DEBUG) Log.d(WifiState.TAG, "Pinging: " + mTarget + " try " + ntry + " timeout " + timeout);
+
                 int count;
                 for (count = 0; count < ntry; count++) {
                     pingStatus.mNumPing++;
@@ -192,6 +193,7 @@ public class WifiStatePingService extends Service {
                         pingStatus.mNumOk++;
                     } else {
                         pingStatus.mNumNg++;
+
                     }
                     // only update Android Notification if it's a change in reachability
                     // ToDo: Make this an Advanced setting for user
@@ -199,6 +201,12 @@ public class WifiStatePingService extends Service {
                         notifyReachability(reachable);
                     //}
                     pingStatus.mReachable = reachable;
+
+                    // pull new target to try
+                    // If it is a multi list, hostListOn should have been ++ from previous lookup
+                    if (WifiStatePreferences.hostListOn > 0)
+                        mTarget = WifiStatePreferences.getPingTarget(getApplicationContext());
+
                     if (reachable) {
                         break;
                     }
@@ -239,7 +247,11 @@ public class WifiStatePingService extends Service {
             }
             if (target != null) {
                 try {
+                    // BUG ToDo: the timeout is not used when doing the DNS lookup, the app default of www.google.com can take
+                    //  55 seconds on tested device (Android 5.0 Blu Energy 2)
+                    //  suggested target is 8.8.8.8 - and research how to force ping to timeout DNS lookup
                     String[] cmdLine = new String[] { "ping", "-c", "1", "-w", "" + timeout, target };
+                    long pingStartWhen = System.currentTimeMillis();
                     Process process = Runtime.getRuntime().exec(cmdLine);
                     process.waitFor();
                     //String out = readAll(process.getInputStream());
@@ -249,7 +261,7 @@ public class WifiStatePingService extends Service {
                         if (WifiState.DEBUG) Log.d(WifiState.TAG, "ping success: " + target);
                         result = true;
                     } else {
-                        Log.e(WifiState.TAG, "ping failed: " + target);
+                        Log.e(WifiState.TAG, "ping failed: " + target + " process took " + (System.currentTimeMillis() - pingStartWhen));
                     }
                 } catch (InterruptedException e) {
                     e.printStackTrace();

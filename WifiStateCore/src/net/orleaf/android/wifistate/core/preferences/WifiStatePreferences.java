@@ -36,7 +36,7 @@ public class WifiStatePreferences
     public static final boolean PREF_PING_ON_MOBILE_DEFAULT = true;
 
     public static final String PREF_PING_TARGET_KEY = "ping_target";
-    public static final String PREF_PING_TARGET_DEAFULT = "www.google.com";
+    public static final String PREF_PING_TARGET_DEAFULT = "8.8.8.8,8.8.4.4";
 
     public static final String PREF_PING_TIMEOUT_KEY = "ping_timeout";
     public static final int PREF_PING_TIMEOUT_DEFAULT = 3;
@@ -107,10 +107,23 @@ public class WifiStatePreferences
                 WifiStatePreferences.PREF_PING_ON_MOBILE_DEFAULT);
     }
 
+    public static int hostListOn = 0;
+
     public static String getPingTarget(Context ctx) {
-        return PreferenceManager.getDefaultSharedPreferences(ctx).getString(
+        String pile = PreferenceManager.getDefaultSharedPreferences(ctx).getString(
                 WifiStatePreferences.PREF_PING_TARGET_KEY,
                 WifiStatePreferences.PREF_PING_TARGET_DEAFULT);
+        pile = pile.trim();
+        if (pile.contains(","))
+        {
+            String[] hostList = pile.split("\\s*,\\s*");
+            hostListOn++;
+            String outPing = hostList[hostListOn % hostList.length];
+            // android.util.Log.v("WifiState", "hostList " + hostList.length + " got " + outPing);
+            return outPing;
+        }
+        else
+            return pile;
     }
 
     public static int getPingTimeout(Context ctx) {
