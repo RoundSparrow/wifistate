@@ -9,6 +9,7 @@ import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Color;
 import android.net.NetworkInfo;
 import android.net.Uri;
 import android.net.wifi.WifiInfo;
@@ -17,6 +18,9 @@ import android.os.Bundle;
 import android.os.SystemClock;
 import android.telephony.PhoneStateListener;
 import android.telephony.TelephonyManager;
+import android.text.Spannable;
+import android.text.SpannableString;
+import android.text.style.ForegroundColorSpan;
 import android.util.Log;
 
 import net.orleaf.android.wifistate.core.WifiStateControlService;
@@ -87,6 +91,7 @@ public class WifiStateReceiver extends BroadcastReceiver {
                     // Only if there is a change in reachable state
                     //if (reachable != mReachable) {
                         mReachable = reachable;
+                        Integer notificaitonColor = null;
                         String message = mNetworkStateInfo.getStateMessage();
                         if (WifiState.DEBUG) {
                             int ok = intent.getIntExtra("ok", 0);
@@ -94,20 +99,26 @@ public class WifiStateReceiver extends BroadcastReceiver {
                             message += " ping:" + ok + "/" + total;
                             if (reachable)
                             {
-                                if (ok % 2 == 0)
+                                if (ok % 2 == 0) {
+                                    notificaitonColor = Color.parseColor("#BFFC93");  // very light green, nearly white
+                                    notificaitonColor = Color.parseColor("#3C8F00");  // very dark green, nearly black
                                     message += " ♡";
-                                else
+                                }
+                                else {
+                                    notificaitonColor = null;   // black
                                     message += " ♥";
+                                }
                             }
                             else
                             {
                                 message += " !!";
+                                notificaitonColor = Color.parseColor("#FFC0CB");
                             }
                         }
                         if (mReachable) {
-                            showNotificationIcon(ctx, mNetworkStateInfo.getIcon(), message, mNetworkStateInfo.getNetworkMessage());
+                            showNotificationIcon(ctx, mNetworkStateInfo.getIcon(), message, mNetworkStateInfo.getNetworkMessage(), notificaitonColor);
                         } else {
-                            showNotificationIcon(ctx, R.drawable.state_warn, message, mNetworkStateInfo.getNetworkMessage());
+                            showNotificationIcon(ctx, R.drawable.state_warn, message, mNetworkStateInfo.getNetworkMessage(), notificaitonColor);
                         }
                     //}
                 }
@@ -169,7 +180,7 @@ public class WifiStateReceiver extends BroadcastReceiver {
     private void updateState(Context ctx) {
         if (mNetworkStateInfo.update()) {
             // 状態が変化したら通知アイコンを更新
-            showNotificationIcon(ctx, mNetworkStateInfo.getIcon(), mNetworkStateInfo.getStateMessage(), mNetworkStateInfo.getNetworkMessage());
+            showNotificationIcon(ctx, mNetworkStateInfo.getIcon(), mNetworkStateInfo.getStateMessage(), mNetworkStateInfo.getNetworkMessage(), null);
             if (!WifiState.isLiteVersion(ctx)) {
                 if (WifiStatePreferences.getPing(ctx) &&
                         (mNetworkStateInfo.getState().equals(NetworkStateInfo.States.STATE_WIFI_CONNECTED) ||
@@ -246,19 +257,28 @@ public class WifiStateReceiver extends BroadcastReceiver {
      * @param iconRes 表示するアイコンのリソースID
      * @param message 表示するメッセージ
      */
-    public static void showNotificationIcon(Context ctx, int iconRes, String message, String title) {
-        NotificationManager notificationManager = (NotificationManager)
-                ctx.getSystemService(Context.NOTIFICATION_SERVICE);
+    public static void showNotificationIcon(Context ctx, int iconRes, String message, String title, Integer color) {
+        NotificationManager notificationManager = (NotificationManager) ctx.getSystemService(Context.NOTIFICATION_SERVICE);
 
         Intent intent = new Intent(ctx, WifiStateLaunchReceiver.class);
         PendingIntent contentIntent = PendingIntent.getBroadcast(ctx, 0, intent, 0);
 
+        if (color == null)
+        {
+            color = Notification.COLOR_DEFAULT;
+            color = Color.BLACK;
+        }
+
+        Spannable wordtoSpan = new SpannableString(message);
+        wordtoSpan.setSpan(new ForegroundColorSpan(color), 0, message.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+
         Notification notification = new Notification.Builder(ctx)
                 .setContentTitle(title)
-                .setContentText(message)
+                .setContentText(wordtoSpan)
                 .setSmallIcon(iconRes)
                 // .setLargeIcon(aBitmap)
                 .setContentIntent(contentIntent)
+                .setColor(color)
                 .build(); // available from API level 11 and onwards
 
         notification.flags = 0;
@@ -273,8 +293,7 @@ public class WifiStateReceiver extends BroadcastReceiver {
      * ステータスバーの通知アイコンを消去
      */
     public static void clearNotification(Context ctx) {
-        NotificationManager notificationManager =
-            (NotificationManager) ctx.getSystemService(Context.NOTIFICATION_SERVICE);
+        NotificationManager notificationManager = (NotificationManager) ctx.getSystemService(Context.NOTIFICATION_SERVICE);
         notificationManager.cancel(NOTIFICATIONID_ICON);
         disable(ctx);
     }
